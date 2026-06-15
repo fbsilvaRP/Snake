@@ -63,6 +63,11 @@ int main(int argc, char* argv[])
     SDL_SetRenderDrawColor(renderer, 200, 0, 0, 255); //vermelho
     SDL_RenderFillRect(renderer, &bloco_comida);
 
+    //Borda do bloco (apenas contorno, sem preenchimento)
+    SDL_FRect bloco_borda = {500.0f, 300.0f, 40.0f, 40.0f};
+    SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255); //amarelo
+    SDL_RenderRect(renderer, &bloco_borda);
+
     //--- Apresenta o frame ---
     SDL_RenderPresent(renderer);
 
