@@ -509,3 +509,8 @@
 	<SDL3/SDL.h>
 	<stdbool.h>
 
+1781525512 source:c:\users\febra\onedrive\documentos\github\snake\teste\snake-etapa2.c
+	<stdio.h>
+	<stdbool.h>
+	<SDL3/SDL.h>
+

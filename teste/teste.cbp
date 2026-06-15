@@ -39,6 +39,11 @@
 			<Add option="-static-libgcc" />
 			<Add library="../../../../../../../SDL3-3.4.10/x86_64-w64-mingw32/lib/libSDL3.dll.a" />
 		</Linker>
+		<Unit filename="Snake-Etapa2.c">
+			<Option compilerVar="CC" />
+			<Option compile="0" />
+			<Option link="0" />
+		</Unit>
 		<Unit filename="Untitled2.c">
 			<Option compilerVar="CC" />
 		</Unit>
