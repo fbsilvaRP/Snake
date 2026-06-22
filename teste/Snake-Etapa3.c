@@ -20,6 +20,9 @@
 #define COMIDA 2
 //----------------------------------------------------
 
+//Controlando a velocidade do jogo
+#define VELOCIDADE_MS 100               //A cobra se move a cada 150ms
+
 // --- Função para zerar todas as células do "tabuleiro"
 
 //A função percorre a matriz inserida como parâmetro, atribuindo a constante vazio (0) aos elementos da matriz
@@ -61,7 +64,125 @@ void desenhar_tabuleiro(SDL_Renderer *renderer, int tabuleiro[LINHAS][COLUNAS])
     }
 }
 
+//---- A struct da cobra -------
+typedef struct  //Representa uma posição (linha, coluna) no tabuleiro
+{
+        int linha;
+        int coluna;
+} Posicao;
 
+typedef enum //Direções possíveis
+{
+    CIMA,
+    BAIXO,
+    ESQUERDA,
+    DIREITA
+} Direcao;
+
+//Representa o tamanho máximo da cobra
+#define TAMANHO_MAXIMO_COBRA (LINHAS * COLUNAS)
+
+typedef struct
+{
+    Posicao corpo[TAMANHO_MAXIMO_COBRA]; //corpo[0] = cabeça
+    int tamanho;                                                           // quantos segmentos ativos
+    Direcao direcao;
+} Cobra;
+
+// Inicializar a cobra com 3 segmentos no centro do tabuleiro
+void inicializar_cobra(Cobra *cobra)
+{
+    int centro_linha = LINHAS / 2;
+    int centro_coluna = COLUNAS / 2;
+
+    cobra -> tamanho = 3;
+    cobra -> direcao = DIREITA;
+
+    //Cabeça no centro
+    cobra -> corpo[0].linha = centro_linha;
+    cobra ->corpo[0].coluna = centro_coluna;
+
+    //Corpo se estende para a esquerda da cabeça
+    cobra -> corpo[1].linha = centro_linha;
+    cobra -> corpo[1].coluna = centro_coluna - 1;
+
+    cobra -> corpo[2].linha = centro_linha;
+    cobra -> corpo[2].coluna = centro_coluna - 2;
+
+}
+
+//-------- Marca as células da cobra na matriz do tabuleiro ----------
+void atualizar_tabuleiro_com_cobra(int tabuleiro[LINHAS][COLUNAS], Cobra *cobra)
+{
+    for(int i = 0; i < cobra -> tamanho; i++)
+    {
+        int l = cobra -> corpo[i].linha;
+        int c = cobra -> corpo[i].coluna;
+        tabuleiro[l][c] = COBRA;
+    }
+
+}
+
+//Função de movimento
+void mover_cobra(Cobra *cobra)
+{
+    // 1.Move o corpo: cada segmento recebe a posição do segmento anterior
+    //    Importante: percorrer de TRÁS PARA FRENTE para não sobrescrever valores necessários
+    for(int i = cobra -> tamanho - 1; i > 0; i--){
+        cobra -> corpo[i] = cobra -> corpo[i - 1];
+    }
+
+    //2. Move a cabeça na direção atual
+    switch(cobra -> direcao)
+    {
+    case CIMA:
+        cobra -> corpo[0].linha--;
+        break;
+
+    case BAIXO:
+        cobra ->corpo[0].linha++;
+        break;
+
+    case ESQUERDA:
+        cobra ->corpo[0].coluna--;
+        break;
+
+    case DIREITA:
+        cobra ->corpo[0].coluna++;
+        break;
+    }
+
+}
+
+//Capturando o teclado
+void processar_teclado(SDL_Event *evento, Cobra *cobra)
+{
+    if(evento -> type != SDL_EVENT_KEY_DOWN)
+        return;
+
+    switch(evento -> key.scancode)
+    {
+        case SDL_SCANCODE_UP:
+            if(cobra -> direcao != BAIXO)
+                cobra -> direcao = CIMA;
+        break;
+
+        case SDL_SCANCODE_DOWN:
+            if(cobra -> direcao != CIMA)
+                cobra -> direcao = BAIXO;
+        break;
+
+        case SDL_SCANCODE_LEFT:
+            if(cobra ->direcao != DIREITA)
+                cobra -> direcao = ESQUERDA;
+        break;
+
+        case SDL_SCANCODE_RIGHT:
+            if(cobra -> direcao != ESQUERDA)
+                cobra -> direcao = DIREITA;
+        break;
+    }
+}
 
 int main(int argc, char* argv[])
 {
@@ -106,12 +227,13 @@ SDL_Window *janela = SDL_CreateWindow(TITULO,                                   
       inicializar_tabuleiro(tabuleiro);
       // -------------------------------------------------------------------------------------------------
 
-      //Colocando valores de teste para visualizar:
-      tabuleiro[2][3] = COBRA;
-      tabuleiro[2][4] = COBRA;
-      tabuleiro[2][5] = COBRA;
-      tabuleiro[5][10] = COMIDA;
+      //------------ Declara e inicializa a cobra  ------------------------------------------------
+      Cobra cobra;
+      inicializar_cobra(&cobra);  //Passamos o endereço da cobra
       // -------------------------------------------------------------------------------------------------
+
+      //Controle de tempo
+      Uint64 tempo_anterior = SDL_GetTicks();
 
       //-------------- 4. Loop principal do jogo   ------------------------------------------------
         int rodando = 1;                                                                                                       //A var. rodando atua como condição para manter o loop funcionando
@@ -123,7 +245,22 @@ SDL_Window *janela = SDL_CreateWindow(TITULO,                                   
             {
                 if(evento.type == SDL_EVENT_QUIT)                                                          // Caso o usuário encerre a janela...
                     rodando = 0;                                                                                                // Usuário fechou a janela (0), o loop é encerrado
+
+                 //Processa o teclado
+                processar_teclado(&evento, &cobra);
             }
+
+            //Só move a cobra quando o tempo passou
+            Uint64 tempo_atual = SDL_GetTicks();
+            if(tempo_atual - tempo_anterior >= VELOCIDADE_MS)
+            {
+                mover_cobra(&cobra);
+                tempo_anterior = tempo_atual;
+            }
+
+            //Limpa o tabuleiro e redesenha a cobra a cada frame
+            inicializar_tabuleiro(tabuleiro);
+            atualizar_tabuleiro_com_cobra(tabuleiro, &cobra);
 
             //Limpa a tela com a cor preta
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
