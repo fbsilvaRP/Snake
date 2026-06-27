@@ -12,15 +12,17 @@
 			<Cursor1 position="2139" topLine="52" />
 		</Cursor>
 	</File>
-	<File name="Snake-Etapa3.c" open="1" top="1" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="Snake-Etapa3.c" open="1" top="1" tabpos="1" split="0" active="1" splitpos="0" zoom_1="-2" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="4222" topLine="30" />
+			<Cursor1 position="7853" topLine="173" />
 		</Cursor>
 		<Folding>
-			<Collapse line="30" />
-			<Collapse line="39" />
-			<Collapse line="93" />
-			<Collapse line="115" />
+			<Collapse line="32" />
+			<Collapse line="41" />
+			<Collapse line="70" />
+			<Collapse line="95" />
+			<Collapse line="117" />
+			<Collapse line="128" />
 		</Folding>
 	</File>
 </CodeBlocks_layout_file>
