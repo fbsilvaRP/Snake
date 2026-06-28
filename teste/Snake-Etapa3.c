@@ -5,7 +5,11 @@
 #include <stdlib.h>
 #include <time.h>
 //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
+// --- Estados do jogo ---
+#define TELA_INICIO   0
+#define TELA_JOGANDO    1
+#define TELA_GAME_OVER  2
+//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 // --- Definição das dimensões e título da janela ---
 
 #define LARGURA_JANELA 640                                                                             //Definição da largura da janela em pixels
@@ -161,28 +165,49 @@ Posicao spawnar_comida(int tabuleiro[LINHAS][COLUNAS])
 //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 // --- Verifica se a cobra colidiu com algo ---
+    // Recebe a posição FUTURA da cabeça e verifica se é válida
+    // Retorna 1 se houve colisão, 0 se está tudo bem
 
-// Retorna 1 se houve colisão, 0 se está tudo bem
 int checar_colisao(int tabuleiro[LINHAS][COLUNAS], Cobra *cobra)
 {
-    int cabeca_l = cobra->corpo[0].linha;
-    int cabeca_c = cobra->corpo[0].coluna;
+    // Calcula a próxima posição da cabeça
+    Posicao proxima = cobra->corpo[0];
+
+    switch (cobra->direcao)
+    {
+        case CIMA:
+            proxima.linha--;
+        break;
+
+        case BAIXO:
+            proxima.linha++;
+        break;
+
+        case ESQUERDA:
+            proxima.coluna--;
+        break;
+
+        case DIREITA:
+            proxima.coluna++;
+        break;
+    }
 
     // Colisão com as paredes
-    if (cabeca_l < 0 || cabeca_l >= LINHAS ||
-        cabeca_c < 0 || cabeca_c >= COLUNAS)
+    if (proxima.linha  < 0 || proxima.linha  >= LINHAS ||
+        proxima.coluna < 0 || proxima.coluna >= COLUNAS)
         return 1;
 
-    // Colisão com o próprio corpo (começa em 1, ignorando a cabeça)
+    // Colisão com o próprio corpo (ignora o índice 0)
     for (int i = 1; i < cobra->tamanho; i++)
     {
-        if (cobra->corpo[i].linha  == cabeca_l &&
-            cobra->corpo[i].coluna == cabeca_c)
+        if (cobra->corpo[i].linha  == proxima.linha &&
+            cobra->corpo[i].coluna == proxima.coluna)
             return 1;
     }
 
     return 0;
 }
+
 //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 int mover_cobra(Cobra *cobra, int tabuleiro[LINHAS][COLUNAS])
 {
@@ -249,6 +274,138 @@ int mover_cobra(Cobra *cobra, int tabuleiro[LINHAS][COLUNAS])
 }
 //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+// --- Salva o recorde em arquivo ---
+void salvar_recorde(int recorde)
+{
+    FILE *arquivo = fopen("recorde.txt", "w");  // "w" = escrita
+
+    if (arquivo == NULL)
+    {
+        printf("Erro ao salvar recorde!\n");
+        return;
+    }
+
+    fprintf(arquivo, "%d", recorde);  // escreve o número no arquivo
+    fclose(arquivo);
+}
+
+// --- Carrega o recorde do arquivo ---
+int carregar_recorde()
+{
+    FILE *arquivo = fopen("recorde.txt", "r");  // "r" = leitura
+
+    if (arquivo == NULL)
+        return 0;  // arquivo não existe ainda → recorde é 0
+
+    int recorde = 0;
+    fscanf(arquivo, "%d", &recorde);  // lê o número do arquivo
+    fclose(arquivo);
+
+    return recorde;
+}
+//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+// --- Desenha a tela de início ---
+void desenhar_tela_inicio(SDL_Renderer *renderer)
+{
+    // Fundo azul escuro
+    SDL_SetRenderDrawColor(renderer, 0, 0, 80, 255);
+    SDL_RenderClear(renderer);
+
+    // Borda da tela
+    SDL_SetRenderDrawColor(renderer, 0, 100, 200, 255);
+    SDL_FRect borda = { 10.0f, 10.0f, 620.0f, 620.0f };
+    SDL_RenderRect(renderer, &borda);
+
+    // Cobra decorativa — 8 blocos verdes enfileirados
+    for(int i = 0; i < 8; i++)
+    {
+        SDL_SetRenderDrawColor(renderer, 0, 180, 0, 255);
+        SDL_FRect bloco = { 100.0f + i * 36.0f, 240.0f, 30.0f, 30.0f };
+        SDL_RenderFillRect(renderer, &bloco);
+    }
+
+    // Cabeça da cobra (verde mais claro)
+    SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
+    SDL_FRect cabeca = { 100.0f + 8 * 36.0f, 240.0f, 30.0f, 30.0f };
+    SDL_RenderFillRect(renderer, &cabeca);
+
+    // Olho da cabeça (ponto branco)
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    SDL_FRect olho = { 100.0f + 8 * 36.0f + 18.0f, 247.0f, 6.0f, 6.0f };
+    SDL_RenderFillRect(renderer, &olho);
+
+    // Comida (bloco vermelho à frente da cobra)
+    SDL_SetRenderDrawColor(renderer, 220, 0, 0, 255);
+    SDL_FRect comida = { 100.0f + 10 * 36.0f, 240.0f, 30.0f, 30.0f };
+    SDL_RenderFillRect(renderer, &comida);
+
+    // Seta ▶ feita de retângulos (indica pressionar ENTER)
+    SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);
+    // Corpo da seta (triângulo aproximado com 4 barras)
+    SDL_FRect seta1 = { 290.0f, 380.0f, 10.0f, 40.0f };
+    SDL_FRect seta2 = { 300.0f, 385.0f, 10.0f, 30.0f };
+    SDL_FRect seta3 = { 310.0f, 390.0f, 10.0f, 20.0f };
+    SDL_FRect seta4 = { 320.0f, 395.0f, 10.0f, 10.0f };
+    SDL_RenderFillRect(renderer, &seta1);
+    SDL_RenderFillRect(renderer, &seta2);
+    SDL_RenderFillRect(renderer, &seta3);
+    SDL_RenderFillRect(renderer, &seta4);
+
+    // Seta piscante (segunda seta ao lado)
+    Uint64 tempo = SDL_GetTicks();
+    if((tempo / 500) % 2 == 0)
+    {
+        SDL_SetRenderDrawColor(renderer, 255, 200, 0, 255);
+        SDL_FRect seta5 = { 340.0f, 380.0f, 10.0f, 40.0f };
+        SDL_FRect seta6 = { 350.0f, 385.0f, 10.0f, 30.0f };
+        SDL_FRect seta7 = { 360.0f, 390.0f, 10.0f, 20.0f };
+        SDL_FRect seta8 = { 370.0f, 395.0f, 10.0f, 10.0f };
+        SDL_RenderFillRect(renderer, &seta5);
+        SDL_RenderFillRect(renderer, &seta6);
+        SDL_RenderFillRect(renderer, &seta7);
+        SDL_RenderFillRect(renderer, &seta8);
+    }
+}
+
+// --- Desenha a tela de game over ---
+void desenhar_tela_game_over(SDL_Renderer *renderer, int score, int recorde)
+{
+    // Fundo vermelho escuro
+    SDL_SetRenderDrawColor(renderer, 60, 0, 0, 255);
+    SDL_RenderClear(renderer);
+
+    // Borda da tela
+    SDL_SetRenderDrawColor(renderer, 200, 0, 0, 255);
+    SDL_FRect borda = { 10.0f, 10.0f, 620.0f, 620.0f };
+    SDL_RenderRect(renderer, &borda);
+
+    // Cruz ✕ centralizada
+    SDL_SetRenderDrawColor(renderer, 255, 50, 50, 255);
+    for(int i = 0; i < 8; i++)
+    {
+        SDL_FRect bloco1 = { 270.0f + i * 14.0f, 220.0f + i * 14.0f, 12.0f, 12.0f };
+        SDL_FRect bloco2 = { 270.0f + i * 14.0f, 318.0f - i * 14.0f, 12.0f, 12.0f };
+        SDL_RenderFillRect(renderer, &bloco1);
+        SDL_RenderFillRect(renderer, &bloco2);
+    }
+
+    // Seta ▶ piscante centralizada
+    Uint64 tempo = SDL_GetTicks();
+    if((tempo / 500) % 2 == 0)
+    {
+        SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);
+        SDL_FRect s1 = { 290.0f, 430.0f, 10.0f, 40.0f };
+        SDL_FRect s2 = { 300.0f, 435.0f, 10.0f, 30.0f };
+        SDL_FRect s3 = { 310.0f, 440.0f, 10.0f, 20.0f };
+        SDL_FRect s4 = { 320.0f, 445.0f, 10.0f, 10.0f };
+        SDL_RenderFillRect(renderer, &s1);
+        SDL_RenderFillRect(renderer, &s2);
+        SDL_RenderFillRect(renderer, &s3);
+        SDL_RenderFillRect(renderer, &s4);
+    }
+}
+//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 // --- Capturando o teclado ---
 
     //SDL_Event é uma estrutura do SDL que representa qualquer coisa que aconteceu — fechar janela, mover mouse, pressionar tecla, etc.
@@ -291,6 +448,20 @@ void processar_teclado(SDL_Event *evento, Cobra *cobra)
         break;
     }
 }
+//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+// --- Reinicia todos os elementos do jogo ---
+void reiniciar_jogo(int tabuleiro[LINHAS][COLUNAS], Cobra *cobra,
+                    int *score, int *game_over, Posicao *pos_comida)
+{
+    inicializar_tabuleiro(tabuleiro);
+    inicializar_cobra(cobra);
+    atualizar_tabuleiro_com_cobra(tabuleiro, cobra);
+    *score     = 0;
+    *game_over = 0;
+    *pos_comida = spawnar_comida(tabuleiro);
+}
+
 //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 //-- Função principal do código ---
@@ -354,15 +525,15 @@ SDL_Window *janela = SDL_CreateWindow(TITULO,                                   
         int game_over = 0;
         int score = 0;
         Posicao pos_comida;     //Variável para guardar a posição da comida
+        int recorde   = carregar_recorde();  //  carrega ao iniciar
+        int tela = TELA_INICIO; //Começa na tela de início
+
+        // Inicializa o gerador de números aleatórios
+        srand((unsigned int)time(NULL));
 
        //Spawna a comida em uma posição vazia
        pos_comida = spawnar_comida(tabuleiro);
       //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-      // Inicializa o gerador de números aleatórios
-        srand((unsigned int)time(NULL));
-
-
 
       // --- Controle de tempo ---
             //O SDL usa Uint64 para medir tempo porque o valor cresce sem parar desde que o programa iniciou
@@ -379,59 +550,95 @@ SDL_Window *janela = SDL_CreateWindow(TITULO,                                   
             while(SDL_PollEvent(&evento))                                                                    // Processa todos os eventos pendentes, verificando se algo aconteceu
             {
                 if(evento.type == SDL_EVENT_QUIT)                                                          // Caso o usuário encerre a janela...
-                    rodando = 0;                                                                                                // Usuário fechou a janela (0), o loop é encerrado
+                    rodando = 0;
+                if(evento.type == SDL_EVENT_KEY_DOWN)
+                {
+                    //ENTER avança ou reinicia conforme a tela atual
+                    if(evento.key.scancode == SDL_SCANCODE_RETURN)
+                    {
+                        if(tela == TELA_INICIO)
+                            tela = TELA_JOGANDO;
 
-                 //Processa o teclado
-                processar_teclado(&evento, &cobra);
+                        else if(tela == TELA_GAME_OVER)
+                        {
+                            reiniciar_jogo(tabuleiro, &cobra, &score, &game_over, &pos_comida);
+                            tela = TELA_INICIO;
+                        }
+                    }
+                }
+
+                if(tela == TELA_JOGANDO)
+                    processar_teclado(&evento, &cobra);  //Processa o teclado
             }
 
             //Só move a cobra quando o tempo passou
             Uint64 tempo_atual = SDL_GetTicks();
-
-            if (tempo_atual - tempo_anterior >= VELOCIDADE_MS)
+            if(tela == TELA_JOGANDO)
             {
-                if (!game_over)
+                if (tempo_atual - tempo_anterior >= VELOCIDADE_MS)
                 {
-                    int comeu = mover_cobra(&cobra, tabuleiro);  // ← dois parâmetros
-                     //Limpa o tabuleiro e redesenha a cobra a cada frame
-                    inicializar_tabuleiro(tabuleiro);
-                    atualizar_tabuleiro_com_cobra(tabuleiro, &cobra);
-                    tabuleiro[pos_comida.linha][pos_comida.coluna] = COMIDA; // Recoloca a comida
 
-                    if (comeu)
-                    {
-                        score += 10;
-                        pos_comida = spawnar_comida(tabuleiro);
-                        printf("Score: %d\n", score);
+                    if (!game_over)
+                   {
+                       // 1. Checa colisão ANTES de mover
+                        if (checar_colisao(tabuleiro, &cobra))
+                        {
+                            game_over = 1;
+                            tela = TELA_GAME_OVER;
+
+                            //Atualiza e salva o recorde se bateu o anterior
+                            if (score > recorde)
+                            {
+                                recorde = score;
+                                salvar_recorde(recorde);
+                                printf("Novo recorde: %d ! \n", recorde);
+                            }
+
+                            printf("Game Over! Score %d | Recorde %d \n", score, recorde);
+                        }
+
+                        else
+                        {
+                            // 2. Só move se não houve colisão
+                            int comeu = mover_cobra(&cobra, tabuleiro);
+
+                            // 3. Atualiza o tabuleiro
+                            inicializar_tabuleiro(tabuleiro);
+                            atualizar_tabuleiro_com_cobra(tabuleiro, &cobra);
+                            tabuleiro[pos_comida.linha][pos_comida.coluna] = COMIDA;
+
+                            // 4. Verifica se comeu
+                            if (comeu)
+                            {
+                                score += 10;
+                                pos_comida = spawnar_comida(tabuleiro);
+                                printf("Score: %d\n", score);
+                             }
+                            }
+                        }
+                    tempo_anterior = tempo_atual;
                     }
-                    if (checar_colisao(tabuleiro, &cobra))
-                    {
-                        game_over = 1;
-                        printf("Game Over! Score: %d\n", score);
-                    }
-                }
-                tempo_anterior = tempo_atual;
             }
 
-            // --- Limpa a tela com a cor preta ---
+if(tela == TELA_INICIO)
+{
+    desenhar_tela_inicio(renderer);
+}
+else if(tela == TELA_JOGANDO)
+{
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_RenderClear(renderer);
+    desenhar_tabuleiro(renderer, tabuleiro);
+}
+else if(tela == TELA_GAME_OVER)
+{
+    desenhar_tela_game_over(renderer, score, recorde);
+}
 
-            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-            SDL_RenderClear(renderer);                                                                          //Apaga tudo e "pinta" de preto
-           //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-            //Desenha o tabuleiro:
-
-            desenhar_tabuleiro(renderer, tabuleiro);
-            //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-            // (Desenho do jogo)
-
-            SDL_RenderPresent(renderer);     //Apresenta o que foi "desenhado" na tela
-            //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
+SDL_RenderPresent(renderer);
 
         }
-    //-------------- 5.  Encerra o jogo  ------------------------------------------------
+    // --- 5.  Encerra o jogo  ---
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(janela);
     SDL_Quit();
