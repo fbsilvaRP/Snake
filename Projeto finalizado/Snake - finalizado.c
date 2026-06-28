@@ -5,11 +5,14 @@
 #include <stdlib.h>
 #include <time.h>
 //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 // --- Estados do jogo ---
+
 #define TELA_INICIO   0
 #define TELA_JOGANDO    1
 #define TELA_GAME_OVER  2
 //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 // --- Definição das dimensões e título da janela ---
 
 #define LARGURA_JANELA 640                                                                             //Definição da largura da janela em pixels
@@ -51,8 +54,8 @@ void inicializar_tabuleiro(int tabuleiro[LINHAS][COLUNAS])
 
 void desenhar_tabuleiro(SDL_Renderer *renderer, int tabuleiro[LINHAS][COLUNAS])
 {
-    SDL_FRect celula;   //retângulo que representa uma célula
-    celula.w = TAMANHO_CELULA - 1; //Cria uma borda fina entre células
+    SDL_FRect celula;                                   //retângulo que representa uma célula
+    celula.w = TAMANHO_CELULA - 1;     //Cria uma borda fina entre células
     celula.h = TAMANHO_CELULA - 1;
 
     for(int i = 0; i < LINHAS; i++)
@@ -96,6 +99,7 @@ typedef enum //Direções possíveis
 //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 // --- Representa o tamanho máximo da cobra ---
+
 #define TAMANHO_MAXIMO_COBRA (LINHAS * COLUNAS)
 //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -108,6 +112,7 @@ typedef struct
 //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 // --- Inicializar a cobra com 3 segmentos no centro do tabuleiro ---
+
 void inicializar_cobra(Cobra *cobra)
 {
     int centro_linha = LINHAS / 2;
@@ -142,7 +147,7 @@ void atualizar_tabuleiro_com_cobra(int tabuleiro[LINHAS][COLUNAS], Cobra *cobra)
 }
 //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-// --- Spawna a comida em uma posição aleatória VAZIA ----------
+// --- Spawna a comida em uma posição aleatória VAZIA ---
 
 Posicao spawnar_comida(int tabuleiro[LINHAS][COLUNAS])
 {
@@ -165,6 +170,7 @@ Posicao spawnar_comida(int tabuleiro[LINHAS][COLUNAS])
 //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 // --- Verifica se a cobra colidiu com algo ---
+
     // Recebe a posição FUTURA da cabeça e verifica se é válida
     // Retorna 1 se houve colisão, 0 se está tudo bem
 
@@ -209,6 +215,7 @@ int checar_colisao(int tabuleiro[LINHAS][COLUNAS], Cobra *cobra)
 }
 
 //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 int mover_cobra(Cobra *cobra, int tabuleiro[LINHAS][COLUNAS])
 {
     /*  Move a cabeça na direção atual
@@ -306,6 +313,7 @@ int carregar_recorde()
 //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 // --- Desenha a tela de início ---
+
 void desenhar_tela_inicio(SDL_Renderer *renderer)
 {
     // Fundo azul escuro
@@ -367,8 +375,10 @@ void desenhar_tela_inicio(SDL_Renderer *renderer)
         SDL_RenderFillRect(renderer, &seta8);
     }
 }
+//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 // --- Desenha a tela de game over ---
+
 void desenhar_tela_game_over(SDL_Renderer *renderer, int score, int recorde)
 {
     // Fundo vermelho escuro
@@ -390,7 +400,7 @@ void desenhar_tela_game_over(SDL_Renderer *renderer, int score, int recorde)
         SDL_RenderFillRect(renderer, &bloco2);
     }
 
-    // Seta ▶ piscante centralizada
+    // Seta piscante centralizada
     Uint64 tempo = SDL_GetTicks();
     if((tempo / 500) % 2 == 0)
     {
@@ -406,10 +416,12 @@ void desenhar_tela_game_over(SDL_Renderer *renderer, int score, int recorde)
     }
 }
 //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 // --- Capturando o teclado ---
 
     //SDL_Event é uma estrutura do SDL que representa qualquer coisa que aconteceu — fechar janela, mover mouse, pressionar tecla, etc.
     //Passamos um ponteiro (*evento) para evitar copiar a estrutura inteira na memória.
+
 void processar_teclado(SDL_Event *evento, Cobra *cobra)
 {
     //Se não for uma tecla pressionada, a função encerra
@@ -457,7 +469,7 @@ void reiniciar_jogo(int tabuleiro[LINHAS][COLUNAS], Cobra *cobra,
     inicializar_tabuleiro(tabuleiro);
     inicializar_cobra(cobra);
     atualizar_tabuleiro_com_cobra(tabuleiro, cobra);
-    *score     = 0;
+    *score = 0;
     *game_over = 0;
     *pos_comida = spawnar_comida(tabuleiro);
 }
@@ -468,7 +480,7 @@ void reiniciar_jogo(int tabuleiro[LINHAS][COLUNAS], Cobra *cobra,
 
 int main(int argc, char* argv[])
 {
-    // --- 1. Inicializção da biblioteca SDL  ---
+    // --- Inicializção da biblioteca SDL  ---
 
     if(!SDL_Init(SDL_INIT_VIDEO))
     {
@@ -477,7 +489,7 @@ int main(int argc, char* argv[])
     }
    //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-    // --- 2.  Criação da janela   ---
+    // ---  Criação da janela   ---
 
 SDL_Window *janela = SDL_CreateWindow(TITULO,                                           // 1. Titulo da janela (definida como constante no início)
                                                                                LARGURA_JANELA,                      //  2. Largura da janela(const.)
@@ -493,7 +505,7 @@ SDL_Window *janela = SDL_CreateWindow(TITULO,                                   
     }
     //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-     // --- 3. Criação do renderer  ---
+     // ---  Criação do renderer  ---
 
      //O renderer é responsável por "desenhar" o conteúdo na janela do jogo
      SDL_Renderer *renderer = SDL_CreateRenderer(janela, NULL);                      //1. Cria o "pincel" que desenha dentro da janela
@@ -568,7 +580,7 @@ SDL_Window *janela = SDL_CreateWindow(TITULO,                                   
                 }
 
                 if(tela == TELA_JOGANDO)
-                    processar_teclado(&evento, &cobra);  //Processa o teclado
+                    processar_teclado(&evento, &cobra);
             }
 
             //Só move a cobra quando o tempo passou
@@ -618,26 +630,27 @@ SDL_Window *janela = SDL_CreateWindow(TITULO,                                   
                         }
                     tempo_anterior = tempo_atual;
                     }
-            }
+                }
 
-if(tela == TELA_INICIO)
-{
-    desenhar_tela_inicio(renderer);
-}
-else if(tela == TELA_JOGANDO)
-{
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-    SDL_RenderClear(renderer);
-    desenhar_tabuleiro(renderer, tabuleiro);
-}
-else if(tela == TELA_GAME_OVER)
-{
-    desenhar_tela_game_over(renderer, score, recorde);
-}
-
-SDL_RenderPresent(renderer);
-
+        if(tela == TELA_INICIO)
+        {
+            desenhar_tela_inicio(renderer);
         }
+        else if(tela == TELA_JOGANDO)
+        {
+            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+            SDL_RenderClear(renderer);
+            desenhar_tabuleiro(renderer, tabuleiro);
+        }
+        else if(tela == TELA_GAME_OVER)
+        {
+            desenhar_tela_game_over(renderer, score, recorde);
+        }
+
+        SDL_RenderPresent(renderer);
+
+    }
+     //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     // --- 5.  Encerra o jogo  ---
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(janela);
