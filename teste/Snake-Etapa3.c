@@ -1,33 +1,39 @@
-// -- Definição das bibliotecas a serem utilizadas
+// --- Definição das bibliotecas a serem utilizadas ---
+
 #include <stdio.h>
 #include <SDL3/SDL.h>
 #include <stdlib.h>
 #include <time.h>
+//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 // --- Definição das dimensões e título da janela ---
+
 #define LARGURA_JANELA 640                                                                             //Definição da largura da janela em pixels
 #define ALTURA_JANELA 640                                                                                //Definição da altura da janela em pixels
 #define TITULO "Super jogo da cobrinha da MAN 1.0"                                    //Definição do título da janela
-//----------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-//-- Definições: tamanho da célula, quantidade de linhas e colunas
+// --- Definições: tamanho da célula, quantidade de linhas e colunas ---
+
 #define TAMANHO_CELULA 32
 #define COLUNAS (LARGURA_JANELA / TAMANHO_CELULA)                          //  640 / 32 = 20
 #define LINHAS     (ALTURA_JANELA / TAMANHO_CELULA)                             //   640 / 32 = 20
-//----------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-//-- Valores que uma célula pode ter -----
+// --- Valores que uma célula pode ter ---
+
 #define VAZIO 0
 #define COBRA 1
 #define COMIDA 2
-//----------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 //Controlando a velocidade do jogo
+
 #define VELOCIDADE_MS 150              //A cobra se move a cada 150ms
+//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-// --- Função para zerar todas as células do "tabuleiro"
-
-//A função percorre a matriz inserida como parâmetro, atribuindo a constante vazio (0) aos elementos da matriz
+// --- Função para zerar todas as células do "tabuleiro" ---
+    //A função percorre a matriz inserida como parâmetro, atribuindo a constante vazio (0) aos elementos da matriz
 
 void inicializar_tabuleiro(int tabuleiro[LINHAS][COLUNAS])
 {
@@ -35,8 +41,9 @@ void inicializar_tabuleiro(int tabuleiro[LINHAS][COLUNAS])
         for(int j = 0; j < COLUNAS; j++)
             tabuleiro[i][j] = VAZIO;
 }
+//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-// ---------------------------- Função para "desenhar" o tabuleiro na tela ----------------------------------------------------
+// --- Função para "desenhar" o tabuleiro na tela ---
 
 void desenhar_tabuleiro(SDL_Renderer *renderer, int tabuleiro[LINHAS][COLUNAS])
 {
@@ -65,8 +72,10 @@ void desenhar_tabuleiro(SDL_Renderer *renderer, int tabuleiro[LINHAS][COLUNAS])
         }
     }
 }
+//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-//---- A struct da cobra -------
+// --- A struct da cobra ---
+
 typedef struct  //Representa uma posição (linha, coluna) no tabuleiro
 {
         int linha;
@@ -80,9 +89,11 @@ typedef enum //Direções possíveis
     ESQUERDA,
     DIREITA
 } Direcao;
+//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-//Representa o tamanho máximo da cobra
+// --- Representa o tamanho máximo da cobra ---
 #define TAMANHO_MAXIMO_COBRA (LINHAS * COLUNAS)
+//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 typedef struct
 {
@@ -90,8 +101,9 @@ typedef struct
     int tamanho;                                                             // tamanho representa quantos segmentos estão ativos
     Direcao direcao;
 } Cobra;
+//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-// Inicializar a cobra com 3 segmentos no centro do tabuleiro
+// --- Inicializar a cobra com 3 segmentos no centro do tabuleiro ---
 void inicializar_cobra(Cobra *cobra)
 {
     int centro_linha = LINHAS / 2;
@@ -112,8 +124,9 @@ void inicializar_cobra(Cobra *cobra)
     cobra -> corpo[2].coluna = centro_coluna - 2;
 
 }
+//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-//-------- Marca as células da cobra na matriz do tabuleiro ----------
+// --- Marca as células da cobra na matriz do tabuleiro ---
 void atualizar_tabuleiro_com_cobra(int tabuleiro[LINHAS][COLUNAS], Cobra *cobra)
 {
     for(int i = 0; i < cobra -> tamanho; i++)
@@ -123,22 +136,32 @@ void atualizar_tabuleiro_com_cobra(int tabuleiro[LINHAS][COLUNAS], Cobra *cobra)
         tabuleiro[l][c] = COBRA;
     }
 }
+//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 // --- Spawna a comida em uma posição aleatória VAZIA ----------
-void spawnar_comida(int tabuleiro[LINHAS][COLUNAS])
+
+Posicao spawnar_comida(int tabuleiro[LINHAS][COLUNAS])
 {
     int l, c;
 
-    // Sorteia posições até encontrar uma célula vazia
     do {
         l = rand() % LINHAS;
         c = rand() % COLUNAS;
     } while (tabuleiro[l][c] != VAZIO);
 
     tabuleiro[l][c] = COMIDA;
+
+    // Retorna a posição sorteada
+    Posicao pos;
+    pos.linha  = l;
+    pos.coluna = c;
+    return pos;
 }
 
-// -------- Verifica se a cobra colidiu com algo ----------
+//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+// --- Verifica se a cobra colidiu com algo ---
+
 // Retorna 1 se houve colisão, 0 se está tudo bem
 int checar_colisao(int tabuleiro[LINHAS][COLUNAS], Cobra *cobra)
 {
@@ -160,19 +183,39 @@ int checar_colisao(int tabuleiro[LINHAS][COLUNAS], Cobra *cobra)
 
     return 0;
 }
-
-// Retorna 1 se comeu, 0 caso contrário
+//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 int mover_cobra(Cobra *cobra, int tabuleiro[LINHAS][COLUNAS])
 {
+    /*  Move a cabeça na direção atual
+        Após deslocar o corpo, a cabeça recebe uma nova posição baseada na direção atual
+        0, 0) -------> A coluna cresce para a direita
+        |
+        |
+        v
+        A linha cresce pra baixo
+
+    */
     // 1. Calcula nova posição da cabeça ANTES de mover
-    Posicao nova_cabeca = cobra->corpo[0];
+    Posicao nova_cabeca = cobra->corpo[0];              //A cobra é armazenada num vetor de posições, onde o índice 0 é sempre a cabeça
+
 
     switch (cobra->direcao)
     {
-        case CIMA:     nova_cabeca.linha--;   break;
-        case BAIXO:    nova_cabeca.linha++;   break;
-        case ESQUERDA: nova_cabeca.coluna--;  break;
-        case DIREITA:  nova_cabeca.coluna++;  break;
+        case CIMA:
+                 nova_cabeca.linha--;       // sobe = linha diminui
+        break;
+
+        case BAIXO:                             // desce = linha aumenta
+            nova_cabeca.linha++;
+        break;
+
+        case ESQUERDA:                  // esquerda = coluna diminui
+            nova_cabeca.coluna--;
+        break;
+
+        case DIREITA:                       // direita =  coluna aumenta
+            nova_cabeca.coluna++;
+        break;
     }
 
     // 2. Verifica se a nova posição tem comida
@@ -204,54 +247,10 @@ int mover_cobra(Cobra *cobra, int tabuleiro[LINHAS][COLUNAS])
 
     return comeu;
 }
+//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-//Função de movimento
-    // 1. O vetor corpo[]
-        //A cobra é armazenada num vetor de posições, onde o índice 0 é sempre a cabeça
-/*
-void mover_cobra(Cobra *cobra)
-{
-    //Percorre o vetor de trás pra frente, fazendo cada segmento obter a posição do segmento à sua frente
+// --- Capturando o teclado ---
 
-    for(int i = cobra -> tamanho - 1; i > 0; i--){
-        cobra -> corpo[i] = cobra -> corpo[i - 1];
-    }
-
-    // 2. Move a cabeça na direção atual
-        // Após deslocar o corpo, a cabeça recebe uma nova posição baseada na direção atual
-        //(0, 0) -------> A coluna cresce para a direita
-        // |
-        // |
-        // v
-        // A linha cresce pra baixo
-
-    switch(cobra -> direcao)
-    {
-        case CIMA:
-        // sobe = linha diminui
-        cobra -> corpo[0].linha--;
-        break;
-
-        case BAIXO:
-        // desce = linha aumenta
-        cobra ->corpo[0].linha++;
-        break;
-
-        // esquerda = coluna diminui
-        case ESQUERDA:
-        cobra ->corpo[0].coluna--;
-        break;
-
-        // direita =  coluna aumenta
-        case DIREITA:
-        cobra ->corpo[0].coluna++;
-        break;
-    }
-
-}
- */
-
-//Capturando o teclado
     //SDL_Event é uma estrutura do SDL que representa qualquer coisa que aconteceu — fechar janela, mover mouse, pressionar tecla, etc.
     //Passamos um ponteiro (*evento) para evitar copiar a estrutura inteira na memória.
 void processar_teclado(SDL_Event *evento, Cobra *cobra)
@@ -292,18 +291,23 @@ void processar_teclado(SDL_Event *evento, Cobra *cobra)
         break;
     }
 }
+//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+//-- Função principal do código ---
 
 int main(int argc, char* argv[])
 {
-    //-------------- 1. Inicializção da biblioteca SDL  ------------------------
+    // --- 1. Inicializção da biblioteca SDL  ---
+
     if(!SDL_Init(SDL_INIT_VIDEO))
     {
             printf("Erro ao inicializar a biblioteca SDL: %s \n", SDL_GetError());      //1. A função SDL_GetError() obtém o erro ocorrido da execução
             return 1;                                                                                                            //2. o return 1 serve para indicar o erro de execução ao usuário
     }
-    // -------------------------------------------------------------------------------
+   //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-    //-------------- 2.  Criação da janela  -------------------------------------
+    // --- 2.  Criação da janela   ---
+
 SDL_Window *janela = SDL_CreateWindow(TITULO,                                           // 1. Titulo da janela (definida como constante no início)
                                                                                LARGURA_JANELA,                      //  2. Largura da janela(const.)
                                                                                 ALTURA_JANELA,                        //  3. Altura da janela (const.)
@@ -316,9 +320,10 @@ SDL_Window *janela = SDL_CreateWindow(TITULO,                                   
         SDL_Quit();                                                                                                     //  2. SDL_Quit() encerra a execução da biblioteca
         return 1;                                                                                                         //  3. o return 1 serve para indicar o erro de execução ao usuário
     }
-    // --------------------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-     //-------------- 3. Criação do renderer  -----------------------------------------------
+     // --- 3. Criação do renderer  ---
+
      //O renderer é responsável por "desenhar" o conteúdo na janela do jogo
      SDL_Renderer *renderer = SDL_CreateRenderer(janela, NULL);                      //1. Cria o "pincel" que desenha dentro da janela
 
@@ -329,36 +334,43 @@ SDL_Window *janela = SDL_CreateWindow(TITULO,                                   
          SDL_Quit();                                                                                                            //  3. SDL_Quit() encerra a execução da biblioteca
          return 1;                                                                                                                //  4. o return 1 serve para indicar o erro de execução ao usuário
      }
-      // -------------------------------------------------------------------------------------------------
+     //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-      //------------ Declara e inicializa o tabuleiro criado -----------------------------------
+      // --- Inicialização dos elementos do tabuleiro ---
+
       int tabuleiro[LINHAS][COLUNAS];
-      inicializar_tabuleiro(tabuleiro);
-      // -------------------------------------------------------------------------------------------------
 
-      //------------ Declara e inicializa a cobra  ------------------------------------------------
+      //Inicializa o tabuleiro com zeros
+      inicializar_tabuleiro(tabuleiro);
+
+      // --- Declara e inicializa a cobra  ---
       Cobra cobra;
-      inicializar_cobra(&cobra);  //Passamos o endereço da cobra
+      inicializar_cobra(&cobra);
+
+      // Marca a cobra no tabuleiro
+      atualizar_tabuleiro_com_cobra(tabuleiro, &cobra);
+
+      // --- Estado do jogo ---
+        int game_over = 0;
+        int score = 0;
+        Posicao pos_comida;     //Variável para guardar a posição da comida
+
+       //Spawna a comida em uma posição vazia
+       pos_comida = spawnar_comida(tabuleiro);
+      //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
       // Inicializa o gerador de números aleatórios
         srand((unsigned int)time(NULL));
 
-    // Marca a cobra no tabuleiro e spawna a primeira comida
-        atualizar_tabuleiro_com_cobra(tabuleiro, &cobra);
-        spawnar_comida(tabuleiro);
 
-        // Estado do jogo
-        int game_over = 0;
-        int score = 0;
 
-      // -------------------------------------------------------------------------------------------------
-
-      //Controle de tempo
+      // --- Controle de tempo ---
             //O SDL usa Uint64 para medir tempo porque o valor cresce sem parar desde que o programa iniciou
             // SDL_GetTicks() retorna quantos milissegundos se passaram desde que o SDL foi iniciado
       Uint64 tempo_anterior = SDL_GetTicks();
 
-      //-------------- 4. Loop principal do jogo   ---------------------------------
+      // --- 4. Loop principal do jogo  ---
+
         int rodando = 1;                                                                                                       //A var. rodando atua como condição para manter o loop funcionando
         SDL_Event evento;
 
@@ -384,10 +396,12 @@ SDL_Window *janela = SDL_CreateWindow(TITULO,                                   
                      //Limpa o tabuleiro e redesenha a cobra a cada frame
                     inicializar_tabuleiro(tabuleiro);
                     atualizar_tabuleiro_com_cobra(tabuleiro, &cobra);
+                    tabuleiro[pos_comida.linha][pos_comida.coluna] = COMIDA; // Recoloca a comida
+
                     if (comeu)
                     {
                         score += 10;
-                        spawnar_comida(tabuleiro);
+                        pos_comida = spawnar_comida(tabuleiro);
                         printf("Score: %d\n", score);
                     }
                     if (checar_colisao(tabuleiro, &cobra))
@@ -399,17 +413,21 @@ SDL_Window *janela = SDL_CreateWindow(TITULO,                                   
                 tempo_anterior = tempo_atual;
             }
 
-            //Limpa a tela com a cor preta
+            // --- Limpa a tela com a cor preta ---
+
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
             SDL_RenderClear(renderer);                                                                          //Apaga tudo e "pinta" de preto
-            // -------------------------------------------------------------------------------------------------
+           //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
             //Desenha o tabuleiro:
+
             desenhar_tabuleiro(renderer, tabuleiro);
-            // -------------------------------------------------------------------------------------------------
+            //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
             // (Desenho do jogo)
-            SDL_RenderPresent(renderer);              //Apresenta o que foi "desenhado" na tela
+
+            SDL_RenderPresent(renderer);     //Apresenta o que foi "desenhado" na tela
+            //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
         }
